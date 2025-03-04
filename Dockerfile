@@ -14,5 +14,5 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . .
 
 # The container will run the training script.
-CMD ["python", "train.py"]
+CMD ["python", "diffusion.py"]
 

@@ -11,7 +11,7 @@ import wandb
 # ---------------------
 # 1) W&B Setup
 # ---------------------
-wandb.init(project="diffusion_mnist", entity="lucasarmand2")  # set your wandb entity
+wandb.init(project="diffusion_mnist", entity="lucasarmand2-lucas-armand")  # set your wandb entity
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
