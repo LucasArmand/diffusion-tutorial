@@ -3,4 +3,6 @@ torchvision
 matplotlib
 numpy
 wandb
-
+pydantic
+fastapi
+uvicorn

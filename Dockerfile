@@ -1,5 +1,5 @@
 # Use a CUDA-enabled PyTorch image
-FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
 
 # Set the working directory
 WORKDIR /app
@@ -14,5 +14,5 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . .
 
 # The container will run the training script.
-CMD ["python", "diffusion.py"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 
