@@ -10,51 +10,10 @@ import wandb
 import argparse
 import os
 
-# ---------------------
-# 1) W&B Setup with Hyperparameter Configuration
-# ---------------------
-wandb.init(
-    project="diffusion_mnist",
-    entity="lucasarmand2-lucas-armand",
-    config={
-        "image_size": 28,
-        "in_channels": 1,
-        "out_channels": 1,
-        "num_epochs": 100,
-        "batch_size": 1024,
-        "learning_rate": 1e-3,
-        "T": 400,
-        "beta_start": 1e-4,
-        "beta_end": 0.02,
-        "time_emb_dim": 128,
-        "base_channels": 64,
-        "clip": 1.0
-    }
-)
-config = wandb.config
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# ---------------------
-# 2) Data
-# ---------------------
-transform = transforms.ToTensor()
-train_dataset = torchvision.datasets.MNIST(root="./data", train=True, download=True, transform=transform)
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
-
-# ---------------------
-# 3) Diffusion Utils
-# ---------------------
-def linear_beta_schedule(timesteps, start, end):
-    return torch.linspace(start, end, timesteps)
-
-T = config.T
-beta_start = config.beta_start
-beta_end = config.beta_end
-
-betas = linear_beta_schedule(T, beta_start, beta_end).to(device)
-alphas = 1. - betas
-alpha_hats = torch.cumprod(alphas, dim=0)
+config = None
+device = None
 
 def forward_diffusion_sample(x_0, t):
     sqrt_alpha_hat = torch.gather(torch.sqrt(alpha_hats), dim=0, index=t).reshape(-1, 1, 1, 1)
@@ -209,6 +168,12 @@ def sample(model, n=16, save_path="generated_samples.png"):
 # 7) Main Function
 # ---------------------
 def main():
+    global config
+    global device
+    global T
+    global betas
+    global alphas
+    global alpha_hats
     parser = argparse.ArgumentParser(description="Train or run inference with a diffusion model.")
     parser.add_argument("--mode", type=str, choices=["train", "inference"], required=True, help="Mode: train or inference")
 
@@ -226,6 +191,7 @@ def main():
 
     args = parser.parse_args()
 
+    
     # Now initialize wandb.config from these args:
     wandb.init(
         project="diffusion_mnist",
@@ -246,6 +212,35 @@ def main():
         }
     )
     config = wandb.config
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # ---------------------
+    # 2) Data
+    # ---------------------
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5,), (0.5,))  # scale to [-1,1]
+    ])
+
+    train_dataset = torchvision.datasets.MNIST(root="./data", train=True, download=True, transform=transform)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+
+    # ---------------------
+    # 3) Diffusion Utils
+    # ---------------------
+    def linear_beta_schedule(timesteps, start, end):
+        return torch.linspace(start, end, timesteps)
+
+    T = config.T
+    beta_start = config.beta_start
+    beta_end = config.beta_end
+
+    betas = linear_beta_schedule(T, beta_start, beta_end).to(device)
+    alphas = 1. - betas
+    alpha_hats = torch.cumprod(alphas, dim=0)
+
+
     
     if args.mode == "inference":
         checkpoint = torch.load(args.weights, map_location=device)
